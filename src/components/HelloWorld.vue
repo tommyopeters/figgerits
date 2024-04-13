@@ -1,70 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import Keyboard from './Keyboard.vue';
 
 onMounted(() => {
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (active.value !== null) {
-      console.log(`Key ${event.key} was pressed`);
+    if (active.value === null) return;
+    console.log(`Key ${event.key} was pressed`);
 
-      if (/^[a-zA-Z]$/.test(event.key)) {
-        // Do something when event.key is an alphabet
-        (userInput.value as { [key: number]: string | null })[active.value] = event.key.toLowerCase();
-
-        // Check if all the characters are filled
-        if (Object.values(userInput.value).every((value) => value !== null)) {
-          console.log('All characters are filled!');
-
-          // Check if the user input is correct
-          if (isCorrect) {
-            console.log('Correct!');
-          } else {
-            console.log('Incorrect!');
-          }
-        } else {
-          // get all divs with class answer-box
-          const answerBoxes = document.querySelectorAll('.answer-box');
-          // get the index of the first occurence of the active divs
-
-          const activeElements = document.querySelectorAll('.active');
-          console.log(activeElements);
-          const activeElement = activeElements.length > 0 ? activeElements[0] : null;
-
-          if (activeElement !== null) {
-            let i = Array.from(answerBoxes).indexOf(activeElement) + 1;
-            console.log(i);
-            console.log(answerBoxes.length);
-            while (true) {
-              if (i === answerBoxes.length) {
-                i = 0;
-              }
-              const encodingElement = answerBoxes[i].querySelector('.encoding');
-              const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
-
-              if (!!encoding && !hasValue(encoding)) {
-                activate(encoding);
-                break;
-              }
-
-              i++;
-            }
-
-            //   // get the next unfilled div
-            //   for (let i = Array.from(answerBoxes).indexOf(activeElement) + 1; i < answerBoxes.length; i++) {
-            //     // console.log(!hasValue(i))
-
-            //     // get the value of the span.encoding within the div.answer-box with the index i
-            //     const encodingElement = answerBoxes[i].querySelector('.encoding');
-            //     const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
-
-            //     if (!!encoding && !hasValue(encoding)) {
-            //       activate(encoding);
-            //       break;
-            //     }
-            //   }
-          }
-        }
-      }
-    }
+    if (!/^[a-zA-Z]$/.test(event.key)) return;
+    handleKeyboardInput(event.key.toLowerCase());
   };
 
   window.addEventListener('keydown', handleKeyDown);
@@ -74,23 +18,28 @@ onMounted(() => {
   });
 });
 
-const encoded = ref<{ [key: string]: number }>({});
+// VARIABLES -------------------------------------------------------
+const encoding = ref<{ [key: string]: number }>({});
 const userInput = ref<{ [key: number]: string | null }>({});
-
-const paragraph = ref('Hello, World!'.split(''));
+const words = ref<string[][] | null>(null);
 const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
 
-const highlight = (char: number | null) => {
-  highlighted.value = char;
-};
-const activate = (char: number) => {
-  active.value = char;
+// PURE FUNCTIONS -------------------------------------------------
+
+const splitWords = (quote: string): string[][] => {
+  let wordsArray = quote.split(' ');
+  let charactersArray = [];
+  for (let word of wordsArray) {
+    let characters = word.split('');
+    charactersArray.push(characters);
+  }
+  return charactersArray;
 };
 
-const getUniqueCharacters = (paragraph: string): string[] => {
+const getUniqueCharacters = (quote: string): string[] => {
   const uniqueCharacters: string[] = [];
-  const characters: string[] = paragraph.toLowerCase().match(/[a-z]/g) || [];
+  const characters: string[] = quote.toLowerCase().match(/[a-z]/g) || [];
 
   for (const char of characters) {
     if (!uniqueCharacters.includes(char)) {
@@ -101,8 +50,8 @@ const getUniqueCharacters = (paragraph: string): string[] => {
   return uniqueCharacters;
 };
 
-const encodeLetters = (paragraph: string): { [key: string]: number } => {
-  const uniqueCharacters = getUniqueCharacters(paragraph);
+const encodeLetters = (quote: string): { [key: string]: number } => {
+  const uniqueCharacters = getUniqueCharacters(quote);
   console.log(uniqueCharacters);
   console.log(uniqueCharacters);
   const encodedLetters: { [key: string]: number } = {};
@@ -118,52 +67,133 @@ const encodeLetters = (paragraph: string): { [key: string]: number } => {
   return encodedLetters;
 };
 
-const isCorrect = Object.keys(encoded.value).every((char) => {
-  return userInput.value[encoded.value[char]] === char;
-});
-encoded.value = encodeLetters('Hello, World!');
-Object.keys(encoded.value).map((i) => {
-  userInput.value[encoded.value[i]] = null;
-});
+// IMPURE FUNCTIONS -------------------------------------------------
 
+const highlight = (char: number | null) => {
+  highlighted.value = char;
+};
+const activate = (char: number) => {
+  active.value = char;
+};
 const hasValue = (num: number): boolean => {
   return userInput.value[num] !== null;
 };
 const getValue = (num: number): string | null => {
   return (userInput.value as { [key: number]: string | null })[num];
 };
-
 const isEncoded = (char: string): boolean => {
-  return !!encoded.value[char.toLowerCase()];
+  return !!encoding.value[char.toLowerCase()];
 };
+const handleKeyboardInput = (character: string) => {
+  if (active.value !== null) {
+    (userInput.value as { [key: number]: string | null })[active.value] = character.toLowerCase();
+
+    if (Object.values(userInput.value).every((value) => value !== null)) {
+      console.log('All characters are filled!');
+
+      const isCorrect = (Object.keys(encoding.value).every((char) => {
+        return userInput.value[encoding.value[char]] === char;
+      }))
+
+      if (isCorrect) {
+        console.log('Correct!');
+      } else {
+        console.log('Incorrect!');
+      }
+    } else {
+      const answerBoxes = document.querySelectorAll('.answer-box');
+      const activeElements = document.querySelectorAll('.active');
+      const activeElement = activeElements.length > 0 ? activeElements[0] : null;
+
+      if (activeElement !== null) {
+        let i = Array.from(answerBoxes).indexOf(activeElement) + 1;
+        while (true) {
+          if (i === answerBoxes.length) {
+            i = 0;
+          }
+          const encodingElement = answerBoxes[i].querySelector('.encoding');
+          const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
+
+          if (!!encoding && !hasValue(encoding)) {
+            activate(encoding);
+            break;
+          }
+
+          i++;
+        }
+      }
+    }
+  }
+};
+
+const startGame = (quote: string) => {
+  words.value = splitWords(quote);
+  encoding.value = encodeLetters(quote);
+  Object.keys(encoding.value).map((i) => {
+    userInput.value[encoding.value[i]] = null;
+  });
+};
+
+// ------------------------------------------------------------------
+
+startGame('Chainsaws were first invented for childbirth.')
 </script>
 
 <template>
-  <div>
-    <ul>
-      <li v-for="(char, index) in paragraph" :key="index">
-        <div class="answer-box" :class="{ hover: highlighted == encoded[char.toLowerCase()], active: active == encoded[char.toLowerCase()] }" @click="activate(encoded[char.toLowerCase()])" @mouseenter="highlight(encoded[char.toLowerCase()])" @mouseleave="highlight(null)" v-if="isEncoded(char)">
-          <span class="user-input">
-            {{ hasValue(encoded[char.toLowerCase()]) ? getValue(encoded[char.toLowerCase()]) : '?' }}
-          </span>
-          <span class="divider"></span>
-          <span class="encoding">{{ encoded[char.toLowerCase()] }}</span>
-        </div>
-        <div class="space" v-else-if="char == ' '">{{ char }}</div>
-        <div class="non-char" v-else>{{ char }}</div>
-      </li>
-    </ul>
+  <div class="figgerits">
+    <div class="quote">
+      <ul class="words">
+        <li v-for="(word, index) in words" :key="index">
+          <ul class="letters">
+            <li v-for="(char, ind) in word" :key="ind">
+              <div class="answer-box"
+                :class="{ hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
+                @click="activate(encoding[char.toLowerCase()])" @mouseenter="highlight(encoding[char.toLowerCase()])"
+                @mouseleave="highlight(null)" v-if="isEncoded(char)">
+                <span class="user-input">
+                  {{ hasValue(encoding[char.toLowerCase()]) ? getValue(encoding[char.toLowerCase()]) : '?' }}
+                </span>
+                <span class="divider"></span>
+                <span class="encoding">{{ encoding[char.toLowerCase()] }}</span>
+              </div>
+              <div class="space" v-else-if="char == ' '">{{ char }}</div>
+              <div class="non-char" v-else>{{ char }}</div>
+            </li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+    <div class="hints">
+
+    </div>
+    <Keyboard @clicked="handleKeyboardInput"></Keyboard>
   </div>
+
 </template>
 
 <style lang="scss" scoped>
-ul {
-  display: flex;
-  list-style-type: none;
-  gap: 5px;
+.figgerits {
+  height: 100dvh;
+  // max-height: -webkit-fill-available;
+  display: grid;
+  grid-template-rows: max-content 1fr max-content;
+
+  .quote{
+    background-color: white;
+    padding: 10px;
+    ul.words{
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px 25px;
+    }
+  }
 }
 
+
 div.answer-box {
+  text-transform: uppercase;
+  font-weight: 500;
   box-sizing: border-box;
   cursor: pointer;
   width: 20px;
@@ -173,6 +203,8 @@ div.answer-box {
   align-items: center;
   border-radius: 5px;
   transition: all 100ms ease-in;
+
+  font-size: 14px;
 
   span.divider {
     width: 100%;
@@ -184,11 +216,13 @@ div.answer-box {
     border: 1px solid rgba(97, 172, 115, 0.65);
     background-color: rgba(187, 249, 202, 0.65);
   }
+
   &.active {
     border: 1px solid rgb(97, 172, 115);
     background-color: rgb(187, 249, 202);
   }
 }
+
 div.non-char {
   display: flex;
 
@@ -196,6 +230,7 @@ div.non-char {
   justify-content: center;
   width: 10px;
 }
+
 div.space {
   display: flex;
 
@@ -203,9 +238,5 @@ div.space {
   justify-content: center;
   width: 20px;
   height: 42px;
-}
-ul {
-  margin: 0;
-  padding: 0;
 }
 </style>

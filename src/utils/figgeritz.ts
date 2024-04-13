@@ -1,6 +1,7 @@
 export default class Figgeritz {
     private quote: string = '';
     private encoding: { [key: string]: number } = {};
+    public userInput: { [key: number]: string } = {};
 
     setQuote(value: string): void {
         if (value && value.trim().length > 0) {
