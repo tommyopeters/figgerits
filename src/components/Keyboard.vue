@@ -24,6 +24,7 @@
       <button @click="handleClick('l')">L</button>
     </div>
     <div class="row">
+      <button class="action-button undo"></button>
       <button @click="handleClick('z')">Z</button>
       <button @click="handleClick('x')">X</button>
       <button @click="handleClick('c')">C</button>
@@ -31,6 +32,7 @@
       <button @click="handleClick('b')">B</button>
       <button @click="handleClick('n')">N</button>
       <button @click="handleClick('m')">M</button>
+      <button class="action-button delete"></button>
     </div>
     <!-- Add more rows as needed -->
   </div>
@@ -49,11 +51,11 @@ export default {
 
 <style lang="scss" scoped>
 .keyboard {
-  padding: 20px 0;
+  padding: 10px 0;
   background-color: #d1d4db;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 10px;
 
   .row {
     display: flex;
@@ -62,13 +64,19 @@ export default {
 
     button {
       border: none;
-      border-radius: 5px;
-      width: 9vw;
+      border-radius: 8px;
+      width: 8.5vw;
       height: 40px;
       background: white;
       box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.25);
       transition: all 0.2s ease-in-out;
       font-weight: 500;
+      font-size: 18px;
+
+      &.action-button {
+        background-color: rgb(174,179,185);
+        width: 12vw;
+      }
 
       &:hover {
         transform: translateY(1px);

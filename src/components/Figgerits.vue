@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import Keyboard from './Keyboard.vue';
 
 onMounted(() => {
@@ -19,9 +19,12 @@ onMounted(() => {
 });
 
 // VARIABLES -------------------------------------------------------
+const quote = ref<string | null>('');
+const info = ref<string | null>('');
 const encoding = ref<{ [key: string]: number }>({});
 const userInput = ref<{ [key: number]: string | null }>({});
 const words = ref<string[][] | null>(null);
+const hints = ref<{ word: string, hint: string }[]>([]);
 const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
 
@@ -72,8 +75,19 @@ const encodeLetters = (quote: string): { [key: string]: number } => {
 const highlight = (char: number | null) => {
   highlighted.value = char;
 };
-const activate = (char: number) => {
+
+const activate = (event: MouseEvent, char: number) => {
   active.value = char;
+  const targetElement = event.target as Element;
+  // check if element has 'current' classname, if not, select any ancestor with a the classname
+  const currentAnswerBox = targetElement.classList.contains('answer-box') ? targetElement : targetElement.closest('.answer-box');
+  if (currentAnswerBox) {
+    nextTick(() => {
+      currentAnswerBox.classList.add('current');
+      console.log(currentAnswerBox);
+    });
+    console.log(currentAnswerBox)
+  }
 };
 const hasValue = (num: number): boolean => {
   return userInput.value[num] !== null;
@@ -103,7 +117,16 @@ const handleKeyboardInput = (character: string) => {
     } else {
       const answerBoxes = document.querySelectorAll('.answer-box');
       const activeElements = document.querySelectorAll('.active');
-      const activeElement = activeElements.length > 0 ? activeElements[0] : null;
+      // check if there is an element with 'current' classname
+      const currentElement = document.querySelector('.current');
+
+      let activeElement;
+      if (currentElement) {
+        activeElement = currentElement
+      } else {
+        activeElement = activeElements.length > 0 ? activeElements[0] : null;
+      }
+
 
       if (activeElement !== null) {
         let i = Array.from(answerBoxes).indexOf(activeElement) + 1;
@@ -115,7 +138,11 @@ const handleKeyboardInput = (character: string) => {
           const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
 
           if (!!encoding && !hasValue(encoding)) {
-            activate(encoding);
+            active.value = encoding;
+            nextTick(() => {
+              activeElement.classList.remove('current');
+              answerBoxes[i].classList.add('current');
+            });
             break;
           }
 
@@ -126,17 +153,40 @@ const handleKeyboardInput = (character: string) => {
   }
 };
 
-const startGame = (quote: string) => {
-  words.value = splitWords(quote);
-  encoding.value = encodeLetters(quote);
+
+const startGame = (quoteString: string, clues: { word: string, hint: string }[], infoString: string) => {
+  quote.value = quoteString;
+  words.value = splitWords(quoteString);
+  encoding.value = encodeLetters(quoteString);
   Object.keys(encoding.value).map((i) => {
     userInput.value[encoding.value[i]] = null;
   });
+  hints.value = clues;
+  info.value = infoString;
 };
 
 // ------------------------------------------------------------------
 
-startGame('Chainsaws were first invented for childbirth.')
+startGame('Water might not be wet.', [
+  {
+    "word": "better",
+    "hint": "improve with time"
+  },
+  {
+    "word": "manage",
+    "hint": "control and organize"
+  },
+  {
+    "word": "within",
+    "hint": "inside a boundary"
+  },
+  {
+    "word": "motion",
+    "hint": "movement and change"
+  }
+], "This is because most scientists define wetness as a liquid’s ability to maintain contact with a solid surface, meaning that water itself is not wet, but can make other objects wet.")
+
+
 </script>
 
 <template>
@@ -148,8 +198,9 @@ startGame('Chainsaws were first invented for childbirth.')
             <li v-for="(char, ind) in word" :key="ind">
               <div class="answer-box"
                 :class="{ hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
-                @click="activate(encoding[char.toLowerCase()])" @mouseenter="highlight(encoding[char.toLowerCase()])"
-                @mouseleave="highlight(null)" v-if="isEncoded(char)">
+                @click="activate($event, encoding[char.toLowerCase()])"
+                @mouseenter="highlight(encoding[char.toLowerCase()])" @mouseleave="highlight(null)"
+                v-if="isEncoded(char)">
                 <span class="user-input">
                   {{ hasValue(encoding[char.toLowerCase()]) ? getValue(encoding[char.toLowerCase()]) : '?' }}
                 </span>
@@ -164,7 +215,29 @@ startGame('Chainsaws were first invented for childbirth.')
       </ul>
     </div>
     <div class="hints">
-
+      <h3>Definition & words</h3>
+      <ul>
+        <li v-for="(hint, index) in hints" :key="index">
+          <div class="hint">{{ hint.hint }}</div>
+          <div class="word">
+            <ul class="letters">
+              <li class="" v-for="(char, ind) in hint.word" :key="ind">
+                <div class="answer-box"
+                  :class="{ hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
+                  @click="activate($event, encoding[char.toLowerCase()])"
+                  @mouseenter="highlight(encoding[char.toLowerCase()])" @mouseleave="highlight(null)"
+                  v-if="isEncoded(char)">
+                  <span class="user-input">
+                    {{ hasValue(encoding[char.toLowerCase()]) ? getValue(encoding[char.toLowerCase()]) : '?' }}
+                  </span>
+                  <span class="divider"></span>
+                  <span class="encoding">{{ encoding[char.toLowerCase()] }}</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </li>
+      </ul>
     </div>
     <Keyboard @clicked="handleKeyboardInput"></Keyboard>
   </div>
@@ -178,10 +251,11 @@ startGame('Chainsaws were first invented for childbirth.')
   display: grid;
   grid-template-rows: max-content 1fr max-content;
 
-  .quote{
+  .quote {
     background-color: white;
     padding: 10px;
-    ul.words{
+
+    ul.words {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
@@ -221,6 +295,11 @@ div.answer-box {
     border: 1px solid rgb(97, 172, 115);
     background-color: rgb(187, 249, 202);
   }
+
+  &.current {
+    border-color: rgb(48, 219, 85);
+    background-color: rgb(48, 219, 85);
+  }
 }
 
 div.non-char {
@@ -229,6 +308,41 @@ div.non-char {
   align-items: center;
   justify-content: center;
   width: 10px;
+}
+
+.hints {
+  display: block;
+  padding: 10px;
+
+  &>ul {
+    display: block;
+
+    &>li {
+      display: grid;
+      align-items: center;
+      margin-bottom: 30px;
+      column-gap: 10px;
+      grid-template-columns: 5fr 4fr;
+      padding: 5px 20px;
+      border-radius: 10px;
+
+      .hint {
+        font-size: 14px;
+        justify-self: end;
+        font-weight: 500;
+
+        &::first-letter {
+          text-transform: uppercase;
+        }
+      }
+
+
+      &:has(.answer-box.current) {
+        background-color: white;
+        border: 1px solid rgb(48, 219, 85);
+      }
+    }
+  }
 }
 
 div.space {
