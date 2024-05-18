@@ -167,24 +167,32 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
 
 // ------------------------------------------------------------------
 
-startGame('Water might not be wet.', [
-  {
-    "word": "better",
-    "hint": "improve with time"
-  },
-  {
-    "word": "manage",
-    "hint": "control and organize"
-  },
-  {
-    "word": "within",
-    "hint": "inside a boundary"
-  },
-  {
-    "word": "motion",
-    "hint": "movement and change"
-  }
-], "This is because most scientists define wetness as a liquid’s ability to maintain contact with a solid surface, meaning that water itself is not wet, but can make other objects wet.")
+startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
+{
+            "word": "terror",
+            "hint": "Fearsome act of violence"
+        },
+        {
+            "word": "highly",
+            "hint": "Extremely good or skilled"
+        },
+        {
+            "word": "annual",
+            "hint": "Yearly event or publication"
+        },
+        {
+            "word": "public",
+            "hint": "Open to everyone, not private"
+        },
+        {
+            "word": "window",
+            "hint": "Glass box for looking out"
+        },
+        {
+            "word": "afford",
+            "hint": "Have the means to pay for"
+        }
+    ], "A study in 2018 found that wearing a necktie can reduce the blood flow to your brain by up to 7.5 per cent, which can make you feel dizzy, nauseous, and cause headaches. They can also increase the pressure in your eyes if on too tight and are great at carrying germs.")
 
 
 </script>
@@ -314,13 +322,19 @@ div.non-char {
   display: block;
   padding: 10px;
 
+  h3{
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
   &>ul {
     display: block;
 
     &>li {
       display: grid;
       align-items: center;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       column-gap: 10px;
       grid-template-columns: 5fr 4fr;
       padding: 5px 20px;
