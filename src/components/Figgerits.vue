@@ -27,6 +27,7 @@ const words = ref<string[][] | null>(null);
 const hints = ref<{ word: string, hint: string }[]>([]);
 const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
+const currentElement = ref<any | null>(null);
 
 // PURE FUNCTIONS -------------------------------------------------
 
@@ -70,25 +71,31 @@ const encodeLetters = (quote: string): { [key: string]: number } => {
   return encodedLetters;
 };
 
+
 // IMPURE FUNCTIONS -------------------------------------------------
 
 const highlight = (char: number | null) => {
   highlighted.value = char;
 };
-
-const activate = (event: MouseEvent, char: number) => {
+const activate = (event: MouseEvent, char: number, type: string) => {
   active.value = char;
-  const targetElement = event.target as Element;
-  // check if element has 'current' classname, if not, select any ancestor with a the classname
-  const currentAnswerBox = targetElement.classList.contains('answer-box') ? targetElement : targetElement.closest('.answer-box');
-  if (currentAnswerBox) {
-    nextTick(() => {
-      currentAnswerBox.classList.add('current');
-      console.log(currentAnswerBox);
-    });
-    console.log(currentAnswerBox)
-  }
+  const targetElement = event.target as HTMLElement;
+  const currentAnswerBox = targetElement.classList.contains('answer-box') ? targetElement : targetElement.closest('.answer-box') as HTMLElement;
+  const index = currentAnswerBox.dataset.index;
+  const ind = currentAnswerBox.dataset.ind;
+  currentElement.value = {
+    index,
+    ind,
+    type
+  };
+  console.log(currentAnswerBox)
 };
+function isCurrentElement(type: string, index: number, ind: number) {
+
+  if (currentElement.value) {
+    return currentElement.value.index == index && currentElement.value.ind == ind && currentElement.value.type == type;
+  }
+}
 const hasValue = (num: number): boolean => {
   return userInput.value[num] !== null;
 };
@@ -118,11 +125,11 @@ const handleKeyboardInput = (character: string) => {
       const answerBoxes = document.querySelectorAll('.answer-box');
       const activeElements = document.querySelectorAll('.active');
       // check if there is an element with 'current' classname
-      const currentElement = document.querySelector('.current');
+      const currentAnswerBox = document.querySelector('.current');
 
       let activeElement;
-      if (currentElement) {
-        activeElement = currentElement
+      if (currentAnswerBox) {
+        activeElement = currentAnswerBox
       } else {
         activeElement = activeElements.length > 0 ? activeElements[0] : null;
       }
@@ -139,10 +146,15 @@ const handleKeyboardInput = (character: string) => {
 
           if (!!encoding && !hasValue(encoding)) {
             active.value = encoding;
-            nextTick(() => {
-              activeElement.classList.remove('current');
-              answerBoxes[i].classList.add('current');
-            });
+            // nextTick(() => {
+            //   activeElement.classList.remove('current');
+            //   answerBoxes[i].classList.add('current');
+            // });
+            currentElement.value = {
+              index: (answerBoxes[i] as HTMLElement).dataset.index,
+              ind: (answerBoxes[i] as HTMLElement).dataset.ind,
+              type: activeElement.closest('.quote') ? 'quote' : 'hint'
+            }
             break;
           }
 
@@ -167,24 +179,32 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
 
 // ------------------------------------------------------------------
 
-startGame('Water might not be wet.', [
+startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
   {
-    "word": "better",
-    "hint": "improve with time"
+    "word": "terror",
+    "hint": "Fearsome act of violence"
   },
   {
-    "word": "manage",
-    "hint": "control and organize"
+    "word": "highly",
+    "hint": "Extremely good or skilled"
   },
   {
-    "word": "within",
-    "hint": "inside a boundary"
+    "word": "annual",
+    "hint": "Yearly event or publication"
   },
   {
-    "word": "motion",
-    "hint": "movement and change"
+    "word": "public",
+    "hint": "Open to everyone, not private"
+  },
+  {
+    "word": "window",
+    "hint": "Glass box for looking out"
+  },
+  {
+    "word": "afford",
+    "hint": "Have the means to pay for"
   }
-], "This is because most scientists define wetness as a liquid’s ability to maintain contact with a solid surface, meaning that water itself is not wet, but can make other objects wet.")
+], "A study in 2018 found that wearing a necktie can reduce the blood flow to your brain by up to 7.5 per cent, which can make you feel dizzy, nauseous, and cause headaches. They can also increase the pressure in your eyes if on too tight and are great at carrying germs.")
 
 
 </script>
@@ -197,10 +217,10 @@ startGame('Water might not be wet.', [
           <ul class="letters">
             <li v-for="(char, ind) in word" :key="ind">
               <div class="answer-box"
-                :class="{ hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
-                @click="activate($event, encoding[char.toLowerCase()])"
+                :class="{ current: isCurrentElement('quote', index, ind), hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
+                @click="activate($event, encoding[char.toLowerCase()], 'quote')"
                 @mouseenter="highlight(encoding[char.toLowerCase()])" @mouseleave="highlight(null)"
-                v-if="isEncoded(char)">
+                v-if="isEncoded(char)" :data-index="index" :data-ind="ind">
                 <span class="user-input">
                   {{ hasValue(encoding[char.toLowerCase()]) ? getValue(encoding[char.toLowerCase()]) : '?' }}
                 </span>
@@ -223,8 +243,8 @@ startGame('Water might not be wet.', [
             <ul class="letters">
               <li class="" v-for="(char, ind) in hint.word" :key="ind">
                 <div class="answer-box"
-                  :class="{ hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
-                  @click="activate($event, encoding[char.toLowerCase()])"
+                  :class="{ current: isCurrentElement('hint', index, ind), hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
+                  :data-index="index" :data-ind="ind" @click="activate($event, encoding[char.toLowerCase()], 'hint')"
                   @mouseenter="highlight(encoding[char.toLowerCase()])" @mouseleave="highlight(null)"
                   v-if="isEncoded(char)">
                   <span class="user-input">
@@ -314,13 +334,19 @@ div.non-char {
   display: block;
   padding: 10px;
 
+  h3 {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
   &>ul {
     display: block;
 
     &>li {
       display: grid;
       align-items: center;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       column-gap: 10px;
       grid-template-columns: 5fr 4fr;
       padding: 5px 20px;
