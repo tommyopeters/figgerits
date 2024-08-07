@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Keyboard from './Keyboard.vue';
 
 onMounted(() => {
@@ -347,8 +347,8 @@ div.non-char {
       display: grid;
       align-items: center;
       margin-bottom: 10px;
-      column-gap: 10px;
-      grid-template-columns: 5fr 4fr;
+      column-gap: 15px;
+      grid-template-columns: 4fr 4fr;
       padding: 5px 20px;
       border-radius: 10px;
 
