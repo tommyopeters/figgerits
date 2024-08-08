@@ -28,6 +28,7 @@ const hints = ref<{ word: string, hint: string }[]>([]);
 const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
 const currentElement = ref<any | null>(null);
+const actionThread = ref<any[]>([]);
 
 // PURE FUNCTIONS -------------------------------------------------
 
@@ -107,6 +108,12 @@ const isEncoded = (char: string): boolean => {
 };
 const handleKeyboardInput = (character: string) => {
   if (active.value !== null) {
+    actionThread.value.push({
+      previousCharacter: userInput.value[active.value],
+      character,
+      active: active.value,
+      currentElement: currentElement.value
+    });
     (userInput.value as { [key: number]: string | null })[active.value] = character.toLowerCase();
 
     if (Object.values(userInput.value).every((value) => value !== null)) {
@@ -164,6 +171,70 @@ const handleKeyboardInput = (character: string) => {
     }
   }
 };
+const handleDelete = () => {
+  if (active.value !== null) {
+    actionThread.value.push({
+      previousCharacter: userInput.value[active.value],
+      character: null,
+      active: active.value,
+      currentElement: currentElement.value
+    });
+    (userInput.value as { [key: number]: string | null })[active.value] = null;
+    const answerBoxes = document.querySelectorAll('.answer-box');
+    const activeElements = document.querySelectorAll('.active');
+    // check if there is an element with 'current' classname
+    const currentAnswerBox = document.querySelector('.current');
+
+    let activeElement;
+    if (currentAnswerBox) {
+      activeElement = currentAnswerBox
+    } else {
+      activeElement = activeElements.length > 0 ? activeElements[0] : null;
+    }
+
+    if (activeElement !== null) {
+      let i = Array.from(answerBoxes).indexOf(activeElement) - 1;
+      while (true) {
+        if (i === -1) {
+          i = answerBoxes.length - 1;
+        }
+        const encodingElement = answerBoxes[i].querySelector('.encoding');
+        const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
+
+        if (!!encoding && !hasValue(encoding)) {
+          active.value = encoding;
+          // nextTick(() => {
+          //   activeElement.classList.remove('current');
+          //   answerBoxes[i].classList.add('current');
+          // });
+          currentElement.value = {
+            index: (answerBoxes[i] as HTMLElement).dataset.index,
+            ind: (answerBoxes[i] as HTMLElement).dataset.ind,
+            type: activeElement.closest('.quote') ? 'quote' : 'hint'
+          }
+          break;
+        }
+
+        i--;
+      }
+    }
+  }
+};
+const handleUndo = () => {
+  console.log("undo")
+  if (actionThread.value.length > 0) {
+    const lastAction = actionThread.value.pop();
+    if (lastAction) {
+      const { previousCharacter, active: activeElement, currentElement: { index, ind, type } } = lastAction;
+      (userInput.value as { [key: number]: string | null })[activeElement] = previousCharacter;
+      currentElement.value = {
+        index,
+        ind,
+        type
+      }
+    }
+  }
+}
 
 
 const startGame = (quoteString: string, clues: { word: string, hint: string }[], infoString: string) => {
@@ -172,6 +243,7 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
   encoding.value = encodeLetters(quoteString);
   Object.keys(encoding.value).map((i) => {
     userInput.value[encoding.value[i]] = null;
+    actionThread.value = [];
   });
   hints.value = clues;
   info.value = infoString;
@@ -259,7 +331,7 @@ startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
         </li>
       </ul>
     </div>
-    <Keyboard @clicked="handleKeyboardInput"></Keyboard>
+    <Keyboard @clicked="handleKeyboardInput" @delete="handleDelete" @undo="handleUndo"></Keyboard>
   </div>
 
 </template>
