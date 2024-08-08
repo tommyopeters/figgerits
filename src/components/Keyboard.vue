@@ -24,7 +24,7 @@
       <button @click="handleClick('l')">L</button>
     </div>
     <div class="row">
-      <button class="action-button undo"></button>
+      <button @click="handleUndo" class="action-button undo"><Return width="30" height="30" /></button>
       <button @click="handleClick('z')">Z</button>
       <button @click="handleClick('x')">X</button>
       <button @click="handleClick('c')">C</button>
@@ -32,18 +32,32 @@
       <button @click="handleClick('b')">B</button>
       <button @click="handleClick('n')">N</button>
       <button @click="handleClick('m')">M</button>
-      <button class="action-button delete"></button>
+      <button @click="handleDelete" class="action-button delete"><Backspace width="30" height="30" /></button>
     </div>
     <!-- Add more rows as needed -->
   </div>
 </template>
 
 <script>
+import Backspace from '../assets/svgs/icons/backspace.svg?component';
+import Return from '../assets/svgs/icons/return.svg?component';
 export default {
+  components: {
+    Backspace,
+    Return
+  },
   methods: {
     handleClick(character) {
       // Handle the click event and return the character
       this.$emit('clicked', character);
+    },
+    handleDelete() {
+      // Handle the click event and return the character
+      this.$emit('delete');
+    },
+    handleUndo(character) {
+      // Handle the click event and return the character
+      this.$emit('undo');
     },
   },
 };
@@ -63,6 +77,7 @@ export default {
     justify-content: space-evenly;
 
     button {
+      cursor: pointer;
       border: none;
       border-radius: 8px;
       width: 8.5vw;
@@ -76,11 +91,19 @@ export default {
       &.action-button {
         background-color: rgb(174,179,185);
         width: 12vw;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       &:hover {
-        transform: translateY(1px);
+        transform: translateY(-1px);
         box-shadow: 0 3px 3px 0 rgba(0, 0, 0, 0.25);
+      }
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 3px 3px -1px rgba(0, 0, 0, 0.25);
       }
     }
   }
