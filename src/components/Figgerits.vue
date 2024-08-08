@@ -180,44 +180,7 @@ const handleDelete = () => {
       currentElement: currentElement.value
     });
     (userInput.value as { [key: number]: string | null })[active.value] = null;
-    const answerBoxes = document.querySelectorAll('.answer-box');
-    const activeElements = document.querySelectorAll('.active');
-    // check if there is an element with 'current' classname
-    const currentAnswerBox = document.querySelector('.current');
 
-    let activeElement;
-    if (currentAnswerBox) {
-      activeElement = currentAnswerBox
-    } else {
-      activeElement = activeElements.length > 0 ? activeElements[0] : null;
-    }
-
-    if (activeElement !== null) {
-      let i = Array.from(answerBoxes).indexOf(activeElement) - 1;
-      while (true) {
-        if (i === -1) {
-          i = answerBoxes.length - 1;
-        }
-        const encodingElement = answerBoxes[i].querySelector('.encoding');
-        const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
-
-        if (!!encoding && !hasValue(encoding)) {
-          active.value = encoding;
-          // nextTick(() => {
-          //   activeElement.classList.remove('current');
-          //   answerBoxes[i].classList.add('current');
-          // });
-          currentElement.value = {
-            index: (answerBoxes[i] as HTMLElement).dataset.index,
-            ind: (answerBoxes[i] as HTMLElement).dataset.ind,
-            type: activeElement.closest('.quote') ? 'quote' : 'hint'
-          }
-          break;
-        }
-
-        i--;
-      }
-    }
   }
 };
 const handleUndo = () => {
