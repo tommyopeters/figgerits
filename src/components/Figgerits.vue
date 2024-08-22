@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Keyboard from './Keyboard.vue';
+import Result from './Result.vue';
 
 onMounted(() => {
   const handleKeyDown = (event: KeyboardEvent) => {
@@ -29,6 +30,7 @@ const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
 const currentElement = ref<any | null>(null);
 const actionThread = ref<any[]>([]);
+const gameState = ref<{ complete: boolean, correct: boolean }>({ complete: false, correct: false });
 
 // PURE FUNCTIONS -------------------------------------------------
 
@@ -57,7 +59,6 @@ const getUniqueCharacters = (quote: string): string[] => {
 
 const encodeLetters = (quote: string): { [key: string]: number } => {
   const uniqueCharacters = getUniqueCharacters(quote);
-  console.log(uniqueCharacters);
   console.log(uniqueCharacters);
   const encodedLetters: { [key: string]: number } = {};
 
@@ -91,6 +92,10 @@ const activate = (event: MouseEvent, char: number, type: string) => {
   };
   console.log(currentAnswerBox)
 };
+const deactivate = () => {
+  active.value = null;
+  currentElement.value = null;
+};
 function isCurrentElement(type: string, index: number, ind: number) {
 
   if (currentElement.value) {
@@ -123,10 +128,9 @@ const handleKeyboardInput = (character: string) => {
         return userInput.value[encoding.value[char]] === char;
       }))
 
-      if (isCorrect) {
-        console.log('Correct!');
-      } else {
-        console.log('Incorrect!');
+      gameState.value = {
+        complete: true,
+        correct: isCorrect
       }
     } else {
       const answerBoxes = document.querySelectorAll('.answer-box');
@@ -180,44 +184,7 @@ const handleDelete = () => {
       currentElement: currentElement.value
     });
     (userInput.value as { [key: number]: string | null })[active.value] = null;
-    const answerBoxes = document.querySelectorAll('.answer-box');
-    const activeElements = document.querySelectorAll('.active');
-    // check if there is an element with 'current' classname
-    const currentAnswerBox = document.querySelector('.current');
 
-    let activeElement;
-    if (currentAnswerBox) {
-      activeElement = currentAnswerBox
-    } else {
-      activeElement = activeElements.length > 0 ? activeElements[0] : null;
-    }
-
-    if (activeElement !== null) {
-      let i = Array.from(answerBoxes).indexOf(activeElement) - 1;
-      while (true) {
-        if (i === -1) {
-          i = answerBoxes.length - 1;
-        }
-        const encodingElement = answerBoxes[i].querySelector('.encoding');
-        const encoding = encodingElement?.textContent ? Number(encodingElement.textContent) : null;
-
-        if (!!encoding && !hasValue(encoding)) {
-          active.value = encoding;
-          // nextTick(() => {
-          //   activeElement.classList.remove('current');
-          //   answerBoxes[i].classList.add('current');
-          // });
-          currentElement.value = {
-            index: (answerBoxes[i] as HTMLElement).dataset.index,
-            ind: (answerBoxes[i] as HTMLElement).dataset.ind,
-            type: activeElement.closest('.quote') ? 'quote' : 'hint'
-          }
-          break;
-        }
-
-        i--;
-      }
-    }
   }
 };
 const handleUndo = () => {
@@ -235,6 +202,50 @@ const handleUndo = () => {
     }
   }
 }
+const handleReset = () => {
+  // userInput.value = {};
+  for (let key in userInput.value) {
+    userInput.value[key] = null;
+  }
+  actionThread.value = [];
+  gameState.value = {
+    complete: false,
+    correct: false
+  }
+  // doesn't work
+  deactivate();
+};
+const handleBack = () => {
+  handleUndo();
+  gameState.value = {
+    complete: false,
+    correct: false
+  }
+};
+const handleNextPuzzle = () => {
+  gameState.value = {
+    complete: false,
+    correct: false
+  }
+  startGame('Water might not be wet.', [
+    {
+      "word": "better",
+      "hint": "improve with time"
+    },
+    {
+      "word": "manage",
+      "hint": "control and organize"
+    },
+    {
+      "word": "within",
+      "hint": "inside a boundary"
+    },
+    {
+      "word": "motion",
+      "hint": "movement and change"
+    }
+  ], "This is because most scientists define wetness as a liquid’s ability to maintain contact with a solid surface, meaning that water itself is not wet, but can make other objects wet.")
+};
 
 
 const startGame = (quoteString: string, clues: { word: string, hint: string }[], infoString: string) => {
@@ -331,6 +342,8 @@ startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
         </li>
       </ul>
     </div>
+    <Result v-if="gameState.complete" :correct="gameState.correct" :quote="quote" :info="info" @next="handleNextPuzzle"
+      @back="handleBack" @reset="handleReset"></Result>
     <Keyboard @clicked="handleKeyboardInput" @delete="handleDelete" @undo="handleUndo"></Keyboard>
   </div>
 
@@ -342,6 +355,7 @@ startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
   // max-height: -webkit-fill-available;
   display: grid;
   grid-template-rows: max-content 1fr max-content;
+  position: relative;
 
   .quote {
     background-color: white;
