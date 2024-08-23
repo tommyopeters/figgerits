@@ -4,20 +4,27 @@ import Keyboard from './Keyboard.vue';
 import Result from './Result.vue';
 
 onMounted(() => {
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (active.value === null) return;
-    console.log(`Key ${event.key} was pressed`);
-
-    if (!/^[a-zA-Z]$/.test(event.key)) return;
-    handleKeyboardInput(event.key.toLowerCase());
-  };
-
+  window.addEventListener('resize', setFullHeight);
+  window.addEventListener('orientationchange', setFullHeight);
   window.addEventListener('keydown', handleKeyDown);
+  document.addEventListener('DOMContentLoaded', setFullHeight);
 
   onBeforeUnmount(() => {
     window.removeEventListener('keydown', handleKeyDown);
   });
 });
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (active.value === null) return;
+  console.log(`Key ${event.key} was pressed`);
+
+  if (!/^[a-zA-Z]$/.test(event.key)) return;
+  handleKeyboardInput(event.key.toLowerCase());
+};
+function setFullHeight() {
+  const vh = window.innerHeight * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+}
 
 // VARIABLES -------------------------------------------------------
 const quote = ref<string | null>('');
@@ -351,11 +358,12 @@ startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
 
 <style lang="scss" scoped>
 .figgerits {
-  height: 100dvh;
+  height: calc(var(--vh, 1vh) * 100);
   // max-height: -webkit-fill-available;
   display: grid;
   grid-template-rows: max-content 1fr max-content;
   position: relative;
+  overflow: hidden;
 
   .quote {
     background-color: white;
@@ -419,6 +427,7 @@ div.non-char {
 .hints {
   display: block;
   padding: 10px;
+  overflow: scroll;
 
   h3 {
     text-align: center;
