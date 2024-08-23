@@ -88,6 +88,10 @@ export default {
       font-weight: 500;
       font-size: 18px;
 
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
       &.action-button {
         background-color: rgb(174,179,185);
         width: 12vw;
