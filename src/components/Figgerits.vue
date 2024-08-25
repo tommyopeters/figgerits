@@ -2,6 +2,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import Keyboard from './Keyboard.vue';
 import Result from './Result.vue';
+import axios from 'axios';
 
 onMounted(() => {
   window.addEventListener('resize', setFullHeight);
@@ -267,8 +268,19 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
   info.value = infoString;
 };
 
-// ------------------------------------------------------------------
+const getQuote = async () => {
+  try {
+    const response = await axios.get('http://figgerits-backend-git-main-tommyopeters-projects.vercel.app/api/quote');
+    const data = response.data;
+    console.log(data);
+    return data;
+  } catch (error) {
+    console.error(error);
+  }
+};
 
+// ------------------------------------------------------------------
+getQuote()
 startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
   {
     "word": "terror",
