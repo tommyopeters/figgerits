@@ -255,7 +255,7 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
 const getQuote = async () => {
   try {
     loading.value = true;
-    const response = await axios.get('http://figgerits-backend-git-main-tommyopeters-projects.vercel.app/api/quote');
+    const response = await axios.get('https://figgerits-backend-git-main-tommyopeters-projects.vercel.app/api/quote');
     const data = response.data[0];
     console.log(data);
 
