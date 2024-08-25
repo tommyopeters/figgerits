@@ -427,7 +427,7 @@ div.non-char {
 .hints {
   display: block;
   padding: 10px;
-  overflow: scroll;
+  overflow: auto;
 
   h3 {
     text-align: center;
