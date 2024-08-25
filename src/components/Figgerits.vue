@@ -39,6 +39,7 @@ const active = ref<number | null>(null);
 const currentElement = ref<any | null>(null);
 const actionThread = ref<any[]>([]);
 const gameState = ref<{ complete: boolean, correct: boolean }>({ complete: false, correct: false });
+const loading = ref<boolean>(false);
 
 // PURE FUNCTIONS -------------------------------------------------
 
@@ -235,24 +236,7 @@ const handleNextPuzzle = () => {
     complete: false,
     correct: false
   }
-  startGame('Water might not be wet.', [
-    {
-      "word": "better",
-      "hint": "improve with time"
-    },
-    {
-      "word": "manage",
-      "hint": "control and organize"
-    },
-    {
-      "word": "within",
-      "hint": "inside a boundary"
-    },
-    {
-      "word": "motion",
-      "hint": "movement and change"
-    }
-  ], "This is because most scientists define wetness as a liquid’s ability to maintain contact with a solid surface, meaning that water itself is not wet, but can make other objects wet.")
+  getQuote();
 };
 
 
@@ -270,49 +254,58 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
 
 const getQuote = async () => {
   try {
+    loading.value = true;
     const response = await axios.get('http://figgerits-backend-git-main-tommyopeters-projects.vercel.app/api/quote');
-    const data = response.data;
+    const data = response.data[0];
     console.log(data);
+
+    if(data && data.quote && data.hints && data.info) {
+      console.log("STarting game")
+      startGame(data.quote, data.hints, data.info);
+      loading.value = false;
+    }
     return data;
   } catch (error) {
+    loading.value = false;
     console.error(error);
   }
 };
 
 // ------------------------------------------------------------------
 getQuote()
-startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
-  {
-    "word": "terror",
-    "hint": "Fearsome act of violence"
-  },
-  {
-    "word": "highly",
-    "hint": "Extremely good or skilled"
-  },
-  {
-    "word": "annual",
-    "hint": "Yearly event or publication"
-  },
-  {
-    "word": "public",
-    "hint": "Open to everyone, not private"
-  },
-  {
-    "word": "window",
-    "hint": "Glass box for looking out"
-  },
-  {
-    "word": "afford",
-    "hint": "Have the means to pay for"
-  }
-], "A study in 2018 found that wearing a necktie can reduce the blood flow to your brain by up to 7.5 per cent, which can make you feel dizzy, nauseous, and cause headaches. They can also increase the pressure in your eyes if on too tight and are great at carrying germs.")
+// startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
+//   {
+//     "word": "terror",
+//     "hint": "Fearsome act of violence"
+//   },
+//   {
+//     "word": "highly",
+//     "hint": "Extremely good or skilled"
+//   },
+//   {
+//     "word": "annual",
+//     "hint": "Yearly event or publication"
+//   },
+//   {
+//     "word": "public",
+//     "hint": "Open to everyone, not private"
+//   },
+//   {
+//     "word": "window",
+//     "hint": "Glass box for looking out"
+//   },
+//   {
+//     "word": "afford",
+//     "hint": "Have the means to pay for"
+//   }
+// ], "A study in 2018 found that wearing a necktie can reduce the blood flow to your brain by up to 7.5 per cent, which can make you feel dizzy, nauseous, and cause headaches. They can also increase the pressure in your eyes if on too tight and are great at carrying germs.")
 
 
 </script>
 
 <template>
   <div class="figgerits">
+    <div v-if="loading" class="loading">Loading...</div>
     <div class="quote">
       <ul class="words">
         <li v-for="(word, index) in words" :key="index">
@@ -485,5 +478,14 @@ div.space {
   justify-content: center;
   width: 20px;
   height: 42px;
+}
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  font-weight: 600;
 }
 </style>
