@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { useStore } from 'vuex';
 import Keyboard from './Keyboard.vue';
 import Result from './Result.vue';
 import axios from 'axios';
 
+const store = useStore();
+
+
 onMounted(() => {
+  getPuzzle();
   window.addEventListener('resize', setFullHeight);
   window.addEventListener('orientationchange', setFullHeight);
   window.addEventListener('keydown', handleKeyDown);
@@ -33,7 +38,7 @@ const info = ref<string | null>('');
 const encoding = ref<{ [key: string]: number }>({});
 const userInput = ref<{ [key: number]: string | null }>({});
 const words = ref<string[][] | null>(null);
-const hints = ref<{ word: string, hint: string }[]>([]);
+const clues = ref<{ word: string, clue: string }[]>([]);
 const highlighted = ref<number | null>(null);
 const active = ref<number | null>(null);
 const currentElement = ref<any | null>(null);
@@ -173,7 +178,7 @@ const handleKeyboardInput = (character: string) => {
             currentElement.value = {
               index: (answerBoxes[i] as HTMLElement).dataset.index,
               ind: (answerBoxes[i] as HTMLElement).dataset.ind,
-              type: activeElement.closest('.quote') ? 'quote' : 'hint'
+              type: activeElement.closest('.quote') ? 'quote' : 'clue'
             }
             break;
           }
@@ -236,11 +241,11 @@ const handleNextPuzzle = () => {
     complete: false,
     correct: false
   }
-  getQuote();
+  getPuzzle();
 };
 
 
-const startGame = (quoteString: string, clues: { word: string, hint: string }[], infoString: string) => {
+const startGame = (quoteString: string, gameClues: { word: string, clue: string }[], infoString: string) => {
   quote.value = quoteString;
   words.value = splitWords(quoteString);
   encoding.value = encodeLetters(quoteString);
@@ -248,58 +253,26 @@ const startGame = (quoteString: string, clues: { word: string, hint: string }[],
     userInput.value[encoding.value[i]] = null;
     actionThread.value = [];
   });
-  hints.value = clues;
+  clues.value = gameClues;
   info.value = infoString;
 };
 
-const getQuote = async () => {
+const getPuzzle = async () => {
   try {
     loading.value = true;
-    const response = await axios.get('https://figgerits-backend-git-main-tommyopeters-projects.vercel.app/api/quote');
-    const data = response.data[0];
-    console.log(data);
+    await store.dispatch('fetchPuzzle');
 
-    if(data && data.quote && data.hints && data.info) {
-      console.log("STarting game")
-      startGame(data.quote, data.hints, data.info);
+    if (store.state.puzzle && store.state.puzzle.quote && store.state.puzzle.clues && store.state.puzzle.info) {
+      console.log("Starting game")
+      startGame(store.state.puzzle.quote, store.state.puzzle.clues, store.state.puzzle.info);
       loading.value = false;
     }
-    return data;
+    return;
   } catch (error) {
     loading.value = false;
     console.error(error);
   }
 };
-
-// ------------------------------------------------------------------
-getQuote()
-// startGame('Wearing a tie can reduce blood flow to the brain by 7.5 per cent.', [
-//   {
-//     "word": "terror",
-//     "hint": "Fearsome act of violence"
-//   },
-//   {
-//     "word": "highly",
-//     "hint": "Extremely good or skilled"
-//   },
-//   {
-//     "word": "annual",
-//     "hint": "Yearly event or publication"
-//   },
-//   {
-//     "word": "public",
-//     "hint": "Open to everyone, not private"
-//   },
-//   {
-//     "word": "window",
-//     "hint": "Glass box for looking out"
-//   },
-//   {
-//     "word": "afford",
-//     "hint": "Have the means to pay for"
-//   }
-// ], "A study in 2018 found that wearing a necktie can reduce the blood flow to your brain by up to 7.5 per cent, which can make you feel dizzy, nauseous, and cause headaches. They can also increase the pressure in your eyes if on too tight and are great at carrying germs.")
-
 
 </script>
 
@@ -329,17 +302,17 @@ getQuote()
         </li>
       </ul>
     </div>
-    <div class="hints">
+    <div class="clues">
       <h3>Definition & words</h3>
       <ul>
-        <li v-for="(hint, index) in hints" :key="index">
-          <div class="hint">{{ hint.hint }}</div>
+        <li v-for="(clue, index) in clues" :key="index">
+          <div class="clue">{{ clue.clue }}</div>
           <div class="word">
             <ul class="letters">
-              <li class="" v-for="(char, ind) in hint.word" :key="ind">
+              <li class="" v-for="(char, ind) in clue.word" :key="ind">
                 <div class="answer-box"
-                  :class="{ current: isCurrentElement('hint', index, ind), hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
-                  :data-index="index" :data-ind="ind" @click="activate($event, encoding[char.toLowerCase()], 'hint')"
+                  :class="{ current: isCurrentElement('clue', index, ind), hover: highlighted == encoding[char.toLowerCase()], active: active == encoding[char.toLowerCase()] }"
+                  :data-index="index" :data-ind="ind" @click="activate($event, encoding[char.toLowerCase()], 'clue')"
                   @mouseenter="highlight(encoding[char.toLowerCase()])" @mouseleave="highlight(null)"
                   v-if="isEncoded(char)">
                   <span class="user-input">
@@ -429,7 +402,7 @@ div.non-char {
   width: 10px;
 }
 
-.hints {
+.clues {
   display: block;
   padding: 10px;
   overflow: auto;
@@ -452,7 +425,7 @@ div.non-char {
       padding: 5px 20px;
       border-radius: 10px;
 
-      .hint {
+      .clue {
         font-size: 14px;
         justify-self: end;
         font-weight: 500;
